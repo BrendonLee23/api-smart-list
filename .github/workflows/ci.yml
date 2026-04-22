@@ -42,10 +42,88 @@ jobs:
       - name: Run tests
         run: npm test -- --no-coverage
 
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high --omit=dev
+
+  migrations:
+    name: Validate migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smartlist_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smartlist_test
+        run: npx prisma migrate deploy
+
+      - name: Validate migration status
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smartlist_test
+        run: npx prisma migrate status
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t api-smart-list:ci .
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint-and-format, test]
+    needs: [lint-and-format, test, type-check, security]
     steps:
       - uses: actions/checkout@v4
 

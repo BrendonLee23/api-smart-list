@@ -45,3 +45,54 @@ jobs:
             fi
           done <<< "$COMMITS"
           exit $FAILED
+
+  validate-pr-convention:
+    name: Validate PR title and description
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title and description
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\(.+\))?: .+$'; then
+            echo "Invalid PR title: \"$PR_TITLE\""
+            echo "Expected format: type: short description (e.g. feat: add task filter)"
+            exit 1
+          fi
+          BODY_CONTENT=$(echo "$PR_BODY" | sed '/^<!--/,/-->/d' | tr -d '[:space:]')
+          if [ -z "$BODY_CONTENT" ]; then
+            echo "PR description is empty. Fill in the description section."
+            exit 1
+          fi
+          echo "PR convention checks passed."
+
+  check-sensitive-files:
+    name: Check for sensitive files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect sensitive files in diff
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed files to check."
+            exit 0
+          fi
+          SENSITIVE='(\.env|\.(pem|key|p12|pfx|jks|secret|crt|cer))(\.|$)|^(id_rsa|id_ed25519|id_dsa)'
+          FOUND=0
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then continue; fi
+            if echo "$file" | grep -qE "$SENSITIVE"; then
+              echo "Sensitive file detected: $file"
+              FOUND=1
+            fi
+          done <<< "$CHANGED_FILES"
+          if [ "$FOUND" -eq 1 ]; then
+            echo "Remove sensitive files from the commit before merging."
+            exit 1
+          fi
+          echo "No sensitive files detected."

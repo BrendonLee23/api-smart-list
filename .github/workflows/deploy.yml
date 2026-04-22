@@ -25,6 +25,19 @@ jobs:
 
       - run: npm ci
 
+      - name: Validate environment variables
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          MISSING=0
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing required environment variable: DATABASE_URL"
+            echo "Configure this secret in GitHub repository settings."
+            MISSING=1
+          fi
+          if [ "$MISSING" -eq 1 ]; then exit 1; fi
+          echo "Environment variables validated."
+
       - name: Run ESLint
         run: npm run lint
 
