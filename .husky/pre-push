@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+echo "▶ Running ESLint..."
+npm run lint || { echo "✗ ESLint failed. Fix the errors before pushing."; exit 1; }
+
+echo "▶ Checking formatting..."
+npm run format:check || { echo "✗ Prettier check failed. Run 'npm run format' to fix."; exit 1; }
+
+echo "▶ Running tests..."
+npm test -- --no-coverage --watchAll=false || { echo "✗ Tests failed. Fix the errors before pushing."; exit 1; }
+
+echo "▶ Running build..."
+npm run build || { echo "✗ Build failed. Fix the errors before pushing."; exit 1; }
+
+echo "✓ All pre-push checks passed!"

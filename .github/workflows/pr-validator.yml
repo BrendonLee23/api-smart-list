@@ -1,0 +1,47 @@
+name: PR Validator
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  validate-branch:
+    name: Validate branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name format
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          echo "Branch: $BRANCH"
+          if ! echo "$BRANCH" | grep -qE '^[A-Za-z0-9]+/[a-z0-9][a-z0-9-]*$'; then
+            echo "Invalid branch name: $BRANCH"
+            echo "Expected format: Name/short-description (e.g. brendon/fix-task-limit)"
+            echo "Rules: no accents, no special characters, lowercase after slash, hyphens only"
+            exit 1
+          fi
+
+  validate-commits:
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check conventional commits
+        run: |
+          COMMITS=$(git log origin/main..HEAD --format="%s")
+          if [ -z "$COMMITS" ]; then
+            echo "No commits to validate."
+            exit 0
+          fi
+          FAILED=0
+          while IFS= read -r msg; do
+            if [ -z "$msg" ]; then continue; fi
+            if ! echo "$msg" | grep -qE '^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\(.+\))?: .+$'; then
+              echo "Invalid commit message: \"$msg\""
+              echo "Expected format: type: short description (e.g. fix: correct task limit)"
+              FAILED=1
+            fi
+          done <<< "$COMMITS"
+          exit $FAILED
