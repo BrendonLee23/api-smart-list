@@ -54,12 +54,18 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\(.+\))?: .+$'; then
+          CONVENTIONAL='^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\(.+\))?: .+$'
+          SLASH_FORMAT='^(Feat|Fix|Chore|Test|Refactor|Docs|Style|Ci|Perf|Build|Revert)(\/[^/].*)?: .+$|^(Feat|Fix|Chore|Test|Refactor|Docs|Style|Ci|Perf|Build|Revert)\/[A-Z].+$'
+          if echo "$PR_TITLE" | grep -qE "$CONVENTIONAL"; then
+            echo "PR convention checks passed."
+          elif echo "$PR_TITLE" | grep -qiE '^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\/[^[:space:]].+|: .+)$'; then
+            echo "PR convention checks passed."
+          else
             echo "Invalid PR title: \"$PR_TITLE\""
-            echo "Expected format: type: short description (e.g. feat: add task filter)"
+            echo "Expected format: 'type: short description' or 'Type/Short description'"
+            echo "Examples: 'feat: add task filter' or 'Feat/UI layout improvements'"
             exit 1
           fi
-          echo "PR convention checks passed."
 
   check-sensitive-files:
     name: Check for sensitive files
