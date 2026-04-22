@@ -1,0 +1,14 @@
+# Força LF para todos os arquivos de texto — sobrepõe core.autocrlf de qualquer SO
+* text=auto eol=lf
+
+# Arquivos binários — sem conversão de linha
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
