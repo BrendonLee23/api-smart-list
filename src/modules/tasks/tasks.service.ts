@@ -16,6 +16,13 @@ export const tasksService = {
   },
 
   async create(data: CreateTaskDTO) {
+    const total = await tasksRepository.count()
+    if (total >= 10) {
+      throw new AppError(
+        'Limite de 10 tarefas atingido. Exclua tarefas existentes para criar novas.',
+        422,
+      )
+    }
     return tasksRepository.create(data)
   },
 

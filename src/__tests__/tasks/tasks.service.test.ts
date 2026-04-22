@@ -48,6 +48,7 @@ describe('tasksService', () => {
 
   describe('create', () => {
     it('should create and return a task', async () => {
+      mockRepo.count.mockResolvedValue(9)
       mockRepo.create.mockResolvedValue(mockTask)
 
       const result = await tasksService.create({ title: 'Tarefa teste', description: 'Descrição' })
@@ -56,6 +57,14 @@ describe('tasksService', () => {
       expect(mockRepo.create).toHaveBeenCalledWith({
         title: 'Tarefa teste',
         description: 'Descrição',
+      })
+    })
+
+    it('should throw AppError with 422 when task limit is reached', async () => {
+      mockRepo.count.mockResolvedValue(10)
+
+      await expect(tasksService.create({ title: 'Tarefa teste' })).rejects.toMatchObject({
+        statusCode: 422,
       })
     })
   })

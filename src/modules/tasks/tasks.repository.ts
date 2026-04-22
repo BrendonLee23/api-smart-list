@@ -6,6 +6,10 @@ export const tasksRepository = {
     return prisma.task.findMany({ orderBy: { createdAt: 'desc' } })
   },
 
+  async count() {
+    return prisma.task.count()
+  },
+
   async findById(id: string) {
     return prisma.task.findUnique({ where: { id } })
   },
