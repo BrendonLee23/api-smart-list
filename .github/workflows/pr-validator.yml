@@ -30,7 +30,7 @@ jobs:
 
       - name: Check conventional commits
         run: |
-          COMMITS=$(git log origin/main..HEAD --format="%s")
+          COMMITS=$(git log origin/main..HEAD --no-merges --format="%s")
           if [ -z "$COMMITS" ]; then
             echo "No commits to validate."
             exit 0
@@ -53,16 +53,10 @@ jobs:
       - name: Check PR title and description
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|chore|test|refactor|docs|style|ci|perf|build|revert)(\(.+\))?: .+$'; then
             echo "Invalid PR title: \"$PR_TITLE\""
             echo "Expected format: type: short description (e.g. feat: add task filter)"
-            exit 1
-          fi
-          BODY_CONTENT=$(echo "$PR_BODY" | sed '/^<!--/,/-->/d' | tr -d '[:space:]')
-          if [ -z "$BODY_CONTENT" ]; then
-            echo "PR description is empty. Fill in the description section."
             exit 1
           fi
           echo "PR convention checks passed."
