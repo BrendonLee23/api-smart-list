@@ -191,6 +191,49 @@ npx prisma migrate dev --name nome-da-migration
 
 Não há seeds — a aplicação começa com banco vazio.
 
+## Docker
+
+O projeto tem suporte completo a Docker. O `docker-compose.yml` sobe apenas o banco de dados PostgreSQL — ideal para desenvolvimento local sem precisar instalar o Postgres na máquina.
+
+**Subir o banco:**
+
+```bash
+docker compose up -d
+```
+
+Isso cria o container `smart-list-db` na porta `5432` com usuário/senha/banco `postgres/postgres/smartlist`.
+
+**Parar o banco:**
+
+```bash
+docker compose down
+```
+
+**Dockerfile da API** usa build multi-stage para otimizar a imagem final:
+
+```
+# Stage 1 — builder: compila o TypeScript
+FROM node:20-alpine AS builder
+RUN npm ci && npm run build
+
+# Stage 2 — runtime: apenas o dist/ e dependências de produção
+FROM node:20-alpine
+RUN npm ci --omit=dev --ignore-scripts
+COPY --from=builder /app/dist ./dist
+```
+
+O `--ignore-scripts` no stage final evita que o Husky tente rodar no container.
+
+**Build manual da imagem da API:**
+
+```bash
+docker build -t api-smart-list .
+docker run -p 3333:3333 \
+  -e DATABASE_URL="postgresql://..." \
+  -e ALLOWED_ORIGIN="http://localhost:3000" \
+  api-smart-list
+```
+
 ## Autenticação
 
 Não implementada nesta versão. Todos os endpoints são públicos. Ver roadmap.
@@ -265,3 +308,4 @@ Se tivesse mais tempo, eu:
 ---
 
 Desenvolvido por **Brendo Moreira**
+
