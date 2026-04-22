@@ -66,6 +66,13 @@ describe('Tasks Routes', () => {
       expect(res.status).toBe(400)
       expect(res.body.success).toBe(false)
     })
+
+    it('should return 400 when title has less than 3 characters', async () => {
+      const res = await request(app).post('/tasks').send({ title: 'ab' })
+
+      expect(res.status).toBe(400)
+      expect(res.body.success).toBe(false)
+    })
   })
 
   describe('PUT /tasks/:id', () => {
